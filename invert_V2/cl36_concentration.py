@@ -89,10 +89,11 @@ def long_term(param,  constants, seismic_scenario, scaling_factors):
 
     # Positions along e initially (eo)
     eo = jnp.zeros(len(Z)) 
-
+    # index= jnp.arange(0, len(Z))
     for iseg in range (0, N_eq):
-        eo = eo.at[jnp.where((Z > sc0[iseg]) & (Z <= sc0[iseg + 1]))].set(epsilon*age[iseg]*0.1*rho_rock)  # in g.cm-2
-        
+        jnp.where((Z > sc0[iseg])&((Z <= sc0[iseg + 1])), eo, epsilon*age[iseg]*0.1*rho_rock)
+        # eo = eo.at[jnp.where((Z > sc0[iseg]) & (Z <= sc0[iseg + 1]))].set(epsilon*age[iseg]*0.1*rho_rock)  # in g.cm-2
+        # eo= eo.at[index[(Z > sc0[iseg]) & (Z <= sc0[iseg + 1])]].set(epsilon*age[iseg]*0.1*rho_rock) 
     eo = eo.at[0:len(Z)].set(epsilon*age[0]*0.1*rho_rock)
     eo = eo + th2  # we add the 1/2 thickness : sample position along e is given at the sample center
 
@@ -122,7 +123,8 @@ def long_term(param,  constants, seismic_scenario, scaling_factors):
     SR = SR*1e-1 # (cm/yr)
     start_depth = preexp * SR # (cm) along the fault plane
 
-    tt = np.where((ti <= (age[0] + preexp)) & (ti > age[0]))[0] # epoch index corresponding to pre-exposure
+    tt = jnp.where((ti <= (age[0] + preexp)) & (ti > age[0]))[0] # epoch index corresponding to pre-exposure
+    
     ip = it[tt]  # corresponding intervals
     xa=jnp.zeros((len(data),2))
     for j in range (0, len(data)) : # loop over samples
@@ -139,12 +141,12 @@ def long_term(param,  constants, seismic_scenario, scaling_factors):
         # B2 - LOOP - iteration on time (ii) during pre-exposure
         for ii in range (0, len(tt)): 
             
-            P_cosmo, P_rad = clrock(d[j,:],eo[j], Lambda_f_e, so_f_e, EL_f[tt[ii]], EL_mu[tt[ii]]) 
+            P_cosmo, P_rad = clrock(d[j,:],eo[j], Lambda_f_e, so_f_e, EL_f[0], EL_mu[0]) 
             
             # scaling at depth due to the presence of the colluvium: scoll=Pcoll(j)/Pcoll(z=0)
-            P_coll = clcoll(coll, dpj, Lambda_f_diseg[0],so_f_diseg[0],EL_f[tt[ii]],EL_mu[tt[ii]]) 
+            P_coll = clcoll(coll, dpj, Lambda_f_diseg[0],so_f_diseg[0],EL_f[0],EL_mu[0]) 
 
-            P_zero = clcoll(coll, d0, Lambda_f_beta_inf,so_f_beta_inf,EL_f[tt[ii]],EL_mu[tt[ii]]) 
+            P_zero = clcoll(coll, d0, Lambda_f_beta_inf,so_f_beta_inf,EL_f[0],EL_mu[0]) 
             
             scoll = P_coll/P_zero  
             P_tot = P_rad + P_cosmo*scoll # only P (Pcosmogenic) is scalled by scoll
@@ -262,10 +264,11 @@ def cl36_seismic_sequence(param, constants, seismic_scenario, scaling_factors, N
     Nf = jnp.zeros(len(Z))  # Nf : final 36Cl concentration 
 
     eo = jnp.zeros(len(Z)) 
-
+    # index= jnp.arange(0, len(Z))
     for iseg in range (0, N_eq):
-        eo= eo.at[jnp.where((Z > sc0[iseg]) & (Z <= sc0[iseg + 1]))].set(epsilon*age[iseg]*0.1*rho_rock)  # in g.cm-2
-    
+        # eo= eo.at[jnp.where((Z > sc0[iseg]) & (Z <= sc0[iseg + 1]))].set(epsilon*age[iseg]*0.1*rho_rock)  # in g.cm-2
+        # eo= eo.at[index[(Z > sc0[iseg]) & (Z <= sc0[iseg + 1])]].set(epsilon*age[iseg]*0.1*rho_rock) 
+        jnp.where((Z > sc0[iseg])&((Z <= sc0[iseg + 1])), eo, epsilon*age[iseg]*0.1*rho_rock)
    
     eo=eo.at[0:len(Z)].set(epsilon*age[0]*0.1*rho_rock)
     eo = eo + th2  # we add the 1/2 thickness : sample position along e is given at the sample center
@@ -287,7 +290,7 @@ def cl36_seismic_sequence(param, constants, seismic_scenario, scaling_factors, N
     
     j1 = np.where((Z >= sc0[0]) & (Z <= sc0[1]))[0]  # Averf samples from first exhumed segment 
     N1 = jnp.zeros(len(Z[j1])) 
-    tt = np.where(ti <= age[0])[0]  # epoch index more recent than first earthquake
+    tt = jnp.where(ti <= age[0])[0]  # epoch index more recent than first earthquake
     ip = it[tt]  # time intervals corresponding
 
 
@@ -303,7 +306,7 @@ def cl36_seismic_sequence(param, constants, seismic_scenario, scaling_factors, N
         # C2 - Loop - iteration on  time steps ii from t1 (= age eq1) to present
         for ii in range (0, len(tt)):
             
-            P_cosmo, P_rad = clrock(djk, ejk, Lambda_f_e, so_f_e, EL_f[tt[ii]], EL_mu[tt[ii]]) 
+            P_cosmo, P_rad = clrock(djk, ejk, Lambda_f_e, so_f_e, EL_f[0], EL_mu[0]) 
             scorr = S_S[1+int(hjk)]/S_S[0]      # surface scaling factor (scorr)
             P_tot = P_rad + P_cosmo*scorr            # only Pcosmogenic is scaled with scorr
             N_out = N_in + (P_tot - lambda36*N_in)*ip[ii]  # minus radioactive decrease during same time step
@@ -351,10 +354,10 @@ def cl36_seismic_sequence(param, constants, seismic_scenario, scaling_factors, N
                 # C6 - DEPTH LOOP - iteration during BURIED PERIOD (T1 -> T(iseg-1))
                 #------------------------------ 
                 for iii in range (0, len(ttt)):
-                    P_cosmo,P_rad = clrock(djk, ejk, Lambda_f_e, so_f_e, EL_f[ttt[iii]], EL_mu[ttt[iii]]) 
+                    P_cosmo,P_rad = clrock(djk, ejk, Lambda_f_e, so_f_e, EL_f[0], EL_mu[0]) 
                     # scaling at depth due to the presence of the colluvium: scoll=Pcoll(j)/Pcoll(z=0)
-                    P_coll = clcoll(coll, djk, Lambda_f_diseg[l+1], so_f_diseg[l+1], EL_f[ttt[iii]], EL_mu[ttt[iii]]) 
-                    P_zero = clcoll(coll, d0, Lambda_f_beta_inf, so_f_beta_inf, EL_f[ttt[iii]], EL_mu[ttt[iii]]) 
+                    P_coll = clcoll(coll, djk, Lambda_f_diseg[l+1], so_f_diseg[l+1], EL_f[0], EL_mu[0]) 
+                    P_zero = clcoll(coll, d0, Lambda_f_beta_inf, so_f_beta_inf, EL_f[0], EL_mu[0]) 
                     scoll = P_coll/P_zero  
                     
                     P_tot = P_rad + P_cosmo*scoll # only P (Pcosmogenic) is scalled by scoll
@@ -376,7 +379,7 @@ def cl36_seismic_sequence(param, constants, seismic_scenario, scaling_factors, N
             # C7 - SURFACE LOOP - iteration during EXHUMED PERIOD 
             
             for ii in range (0, len(tt)):
-                P_cosmo,P_rad = clrock(djk,ejk,Lambda_f_e,so_f_e,EL_f[tt[ii]],EL_mu[tt[ii]]) 
+                P_cosmo,P_rad = clrock(djk,ejk,Lambda_f_e,so_f_e,EL_f[0],EL_mu[0]) 
                     
                 scorr = S_S[1+int(hjk)]/S_S[0]  # surface scaling factor (scorr)
                 P_tot = P_rad + P_cosmo*scorr  # only Pcosmogenic is scaled with scorr
