@@ -1,3 +1,3 @@
 # pymodelscarp
 Coming soon...
-Python code to invert chloorine 36 data
+Python code to invert chlorine 36 data
